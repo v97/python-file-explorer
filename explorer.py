@@ -6,7 +6,12 @@ import shutil
 import os
     
 root = Tk()
+
 fileListBox = None
+textArea = None
+
+def isValidFileName(fileName):
+	return True
 
 def login_verification(username,password,login_window):
 	users = {"a":"myponyisnice", "b":"hello123"}
@@ -23,20 +28,24 @@ def login_verification(username,password,login_window):
 def newFile(parent):
 	name = simpledialog.askstring("Input", "Please enter the file name:",
                                 parent=parent)
-	if(name is None):
-		return
+	if(name is None or (not isValidFileName(name))):
+		return	
 	print("New filew", name)
 	f = open(name,"w+")
-	print("open")
-	f.write("Test")
-	print("write")
+	f.write("")
 	f.close()
-	print("close")
 	addFiles(name)
 
-
-def renameSelectedFile():
-	print("Save file")
+def renameSelectedFile(parent):
+	fileName = fileListBox.get(fileListBox.curselection())
+	newName = simpledialog.askstring("Input", "Please enter the new file name:",
+                                parent=parent)
+	if(newName is None or (not isValidFileName(newName))):
+		return
+	os.rename(fileName, newName)
+	addFiles(newName) 	
+	print("Renamed", fileName, "to", newName)
+	
 
 def saveSelectedFile():
 	print("Save file")
@@ -54,7 +63,7 @@ def menu_bar(root):
 	fileMenu = Menu(menuBar, tearoff=0)
 
 	fileMenu.add_command(label="New", command=lambda: newFile(root))	
-	fileMenu.add_command(label="Rename", command=renameSelectedFile)
+	fileMenu.add_command(label="Rename", command=lambda: renameSelectedFile(root))
 	fileMenu.add_command(label="Save", command=saveSelectedFile)
 	fileMenu.add_command(label="Delete", command=deleteSelectedFile)
 	fileMenu.add_separator()
@@ -66,22 +75,33 @@ def addFiles(fileToSelect = None):
 	fileListBox.delete(0,END)
 	flist = os.listdir()
 	selectionInd = 0
+	added = 0
 	for ind, item in enumerate(flist):
+		if(item == "explorer.py" or os.path.isdir(item)):
+			continue
 		if(not (fileToSelect is None)):
 			if(fileToSelect == item):
-				selectionInd = ind
+				selectionInd = added
 		fileListBox.insert(END, item)
+		added += 1
 	fileListBox.selection_set(selectionInd)
 	print("Selecting", selectionInd)
 
 def onselect(evt):
-    w = evt.widget
-    index = int(w.curselection()[0])
-    value = w.get(index)
-    print('You selected item %d: "%s"' % (index, value))
+	w = evt.widget
+	index = int(w.curselection()[0])
+	fileName = w.get(index)
+	print('You selected item %d: "%s"' % (index, fileName))
+	with open(fileName) as f:
+		lines = f.readlines()
+		textArea.delete('1.0', END)
+		textArea.insert(END, lines)
+		
 
 def file_mgr(username):
-	global fileListBox	
+	global fileListBox
+	global textArea	
+	
 	file_mgr = Toplevel(root)
 
 	file_mgr.title("Files for " + username)
