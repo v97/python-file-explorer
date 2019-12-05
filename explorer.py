@@ -7,6 +7,7 @@ import os
 #Tkinter UI
     
 root = Tk()
+fileListBox = None
 
 def login_verification(username,password,login_window):
 	users = {"a":"myponyisnice", "b":"hello123"}
@@ -28,7 +29,15 @@ def newFile(parent):
                                 parent=parent)
 	if(name is None):
 		return
-	print("New file", name)
+	print("New filew", name)
+	f = open(name,"w+")
+	print("open")
+	f.write("Test")
+	print("write")
+	f.close()
+	print("close")
+	addFiles(name)
+
 
 def renameSelectedFile():
 	print("Save file")
@@ -52,6 +61,17 @@ def menu_bar(root):
 	menuBar.add_cascade(label="File", menu=fileMenu)
 	root.config(menu=menuBar)
 
+def addFiles(fileToSelect = None):
+	fileListBox.delete(0,END)
+	flist = os.listdir()
+	selectionInd = 0
+	for ind, item in enumerate(flist):
+		if(not (fileToSelect is None)):
+			if(fileToSelect == item):
+				selectionInd = ind
+		fileListBox.insert(END, item)
+	fileListBox.selection_set(selectionInd)
+	print("Selecting", selectionInd)
 
 def onselect(evt):
     w = evt.widget
@@ -60,6 +80,7 @@ def onselect(evt):
     print('You selected item %d: "%s"' % (index, value))
 
 def file_mgr(username):
+	global fileListBox	
 	file_mgr = Toplevel(root)
 
 	file_mgr.title("Files for " + username)
@@ -72,11 +93,10 @@ def file_mgr(username):
 	
 	fileListBox = Listbox(m, name='fileListBox')
 	fileListBox.bind('<<ListboxSelect>>', onselect)
-	flist = os.listdir()
 	fileListBox.pack()
+	
+	addFiles()	
 
-	for item in flist:
-	    fileListBox.insert(END, item)
 	m.add(fileListBox)
 
 	textArea = Text(file_mgr, font=("ubuntu", 12))
@@ -88,7 +108,6 @@ def file_mgr(username):
 	scroll.pack(side=RIGHT, fill=Y)
 	menu_bar(file_mgr)
 	
-
 def login():
     login_screen = Toplevel(root)
     login_screen.title("Login")
@@ -114,32 +133,7 @@ def login():
     Button(login_screen, text="Login", width=10, height=1,
     command=lambda: login_verification(username_verify.get(),password_verify.get(),login_screen)).pack()
 
-'''
-Label(root, text="File Manager").grid(row = 5, column = 2)
-
-Button(root, text = "Open a File", command = open_window).grid(row=7, column =1)
-
-Button(root, text = "Copy a File", command = copy_window).grid(row = 19, column = 13)
-
-Button(root, text = "Delete a File", command = delete_window).grid(row = 25, column = 1)
-
-Button(root, text = "List all Files in Directory", command = list_window).grid(row = 31,column = 1)
-
-Button(root, text = "Check a File", command = check_window).grid(row = 13,column = 1)
-
-Button(root, text = "Rename a File", command = rename_window).grid(row = 7, column = 13)
-
-Button(root, text = "Check Folder", command = checkfolder_window).grid(row = 19,column = 1)
-
-Button(root, text = "Move a File", command = rename_window).grid(row = 13, column =13)
-
-Button(root, text = "Make a Folder", command = make_window).grid(row = 25, column = 13)
-
-Button(root, text = "Remove a Folder", command = remove_window).grid(row = 31, column =13)
-'''
-
 file_mgr("user")
-
 
 root.mainloop()
 
