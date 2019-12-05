@@ -1,10 +1,9 @@
 from tkinter import *
 from tkinter import simpledialog
+from tkinter import messagebox
 #from functions import *
 import shutil         
 import os
-
-#Tkinter UI
     
 root = Tk()
 fileListBox = None
@@ -13,15 +12,12 @@ def login_verification(username,password,login_window):
 	users = {"a":"myponyisnice", "b":"hello123"}
 	if(username in users):
 		if(users[username] == password):
-			pass #successful
 			print("Logging in")
 			login_window.destroy()
 			file_mgr(username)
 		else:
-			pass #wrong password
 			print("Incorrect password")
 	else:
-		pass #user not found
 		print("User not found")
 
 def newFile(parent):
@@ -46,7 +42,12 @@ def saveSelectedFile():
 	print("Save file")
 
 def deleteSelectedFile():
-	print("Delete file")
+	fileName = fileListBox.get(fileListBox.curselection())
+	confirmed = messagebox.askokcancel("Question","Really delete " + fileName + " ?")
+	if(confirmed):
+		os.remove(fileName)
+		print(fileName, "deleted")
+		addFiles(0)
 
 def menu_bar(root):
 	menuBar = Menu(root)
