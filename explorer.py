@@ -10,18 +10,33 @@ root = Tk()
 fileListBox = None
 textArea = None
 
+users = {"a":"myponyisnice", "b":"hello123"}
+	
+def all_children (window) :
+	_list = window.winfo_children()
+	for item in _list:
+		if item.winfo_children():
+			_list.extend(item.winfo_children())
+	return _list
+
+def clear_root():
+	widgets = all_children(root)
+	for widget in widgets:
+		widget.pack_forget()
+
 def isValidFileName(fileName):
 	return True
 
 def login_verification(username,password,login_window):
-	users = {"a":"myponyisnice", "b":"hello123"}
+	global users	
 	if(username in users):
 		if(users[username] == password):
 			print("Logging in")
-			login_window.destroy()
+			clear_root()
 			file_mgr(username)
 		else:
 			print("Incorrect password")
+			messagebox.showError("Failed login","Incorrect credentials")
 	else:
 		print("User not found")
 
@@ -49,6 +64,14 @@ def renameSelectedFile(parent):
 
 def saveSelectedFile():
 	print("Save file")
+	try:
+		fileName = fileListBox.get(fileListBox.curselection())
+		f = open(fileName,"w+")
+		f.write(textArea.get("1.0",END))
+		f.close()
+		messagebox.showinfo("Information","Saved " + fileName + " successfully!")
+	except:
+		messagebox.showinfo("Make a new file before saving")
 
 def deleteSelectedFile():
 	fileName = fileListBox.get(fileListBox.curselection())
@@ -92,52 +115,51 @@ def onselect(evt):
 	index = int(w.curselection()[0])
 	fileName = w.get(index)
 	print('You selected item %d: "%s"' % (index, fileName))
+	
+	#update text area
 	with open(fileName) as f:
 		lines = f.readlines()
 		textArea.delete('1.0', END)
 		textArea.insert(END, lines)
 		
-
 def file_mgr(username):
 	global fileListBox
-	global textArea	
+	global textArea
 	
-	file_mgr = Toplevel(root)
-
+	file_mgr = root
 	file_mgr.title("Files for " + username)
-	file_mgr.geometry("600x500")
-	Label(file_mgr, text="Welcome to file mgr").pack()
+	file_mgr.geometry("800x500")
+	
+	Label(file_mgr, text="Welcome to file manager").pack()
 	Label(file_mgr, text="").pack()
 
 	m = PanedWindow(file_mgr,orient="horizontal")
 	m.pack(fill=BOTH, expand=1)
 	
 	fileListBox = Listbox(m, name='fileListBox')
-	fileListBox.bind('<<ListboxSelect>>', onselect)
-	fileListBox.pack()
-	
-	addFiles()	
+	fileListBox.bind('<<ListboxSelect>>', onselect)	
+	addFiles()
 
 	m.add(fileListBox)
 
 	textArea = Text(file_mgr, font=("ubuntu", 12))
-	m.add(textArea)
-	
-	scroll = Scrollbar(file_mgr, command=textArea.yview)
-	textArea.configure(yscrollcommand=scroll.set)
-	textArea.pack(side=LEFT, fill=BOTH, expand=True)
+	scroll = Scrollbar(textArea, command=textArea.yview)
 	scroll.pack(side=RIGHT, fill=Y)
+	textArea.configure(yscrollcommand=scroll.set)
+
+	m.add(textArea)
+
 	menu_bar(file_mgr)
 	
 def login():
-    login_screen = Toplevel(root)
-    login_screen.title("Login")
-    login_screen.geometry("300x250")
-    Label(login_screen, text="Please enter details below to login").pack()
-    Label(login_screen, text="").pack()
- 
     global username_verify
     global password_verify
+
+    login_screen = root
+    login_screen.title("Login")
+    login_screen.geometry("300x250")
+    Label(login_screen, text="Please enter credentials below to login").pack()
+    Label(login_screen, text="").pack()
  
     username_verify = StringVar()
     password_verify = StringVar()
@@ -154,7 +176,6 @@ def login():
     Button(login_screen, text="Login", width=10, height=1,
     command=lambda: login_verification(username_verify.get(),password_verify.get(),login_screen)).pack()
 
-file_mgr("user")
+login()
 
 root.mainloop()
-
