@@ -17,21 +17,7 @@ textArea = None
 conn = sqlite3.connect('users.db')
 c = conn.cursor()
 
-# Create table
-try:
-	c.execute('''CREATE TABLE users
-		     (username text, password text, isAdmin integer)''')
-
-	# Insert a row of data
-	c.execute("INSERT INTO users VALUES ('a','{}',1)".format(make_pw_hash("myPassw0rd")))
-	c.execute("INSERT INTO users VALUES ('b','{}',0)".format(make_pw_hash("hello123")))
-except:
-	print("Table already created")
-
 adminList = ["a"]
-
-# Save (commit) the changes
-conn.commit()
 	
 def all_children (window) :
 	_list = window.winfo_children()
@@ -43,7 +29,7 @@ def all_children (window) :
 def make_pw_hash(password):
 	return str(hashlib.sha256(str.encode(password)).hexdigest())
 
-def check_pw_hash(password, user):
+def check_pw_hash(password, user): #user object === (username, password, isAdmin)
 	if(make_pw_hash(password) == user[1]):
 		return True
 	return False
@@ -51,14 +37,21 @@ def check_pw_hash(password, user):
 def clear_root():
 	widgets = all_children(root)
 	for widget in widgets:
-		widget.pack_forget() #clear window
+		widget.pack_forget() #clear all widgets from window
 
 def clear_credentials():
 	username = ""
 	password = ""
 
 def isAdmin(username): #checks whether user is allowed to edit files
-	return username in adminList
+	c.execute("SELECT * FROM users WHERE username='{}'".format(username))
+	arr = c.fetchall()
+
+	if(len(arr) > 0):
+		isAdminVal = arr[0][2]
+		return isAdminVal == 1 #using integer as boolean
+
+	return False
 
 def login_verification(username,input_pwd):
 	global users
@@ -74,17 +67,6 @@ def login_verification(username,input_pwd):
 	else:
 		messagebox.showerror("Failed login","User doesn't exist")
 
-	conn.close()
-	#if(username in users):
-	#	if(users[username] == password):
-	#		print("Logging in")
-	#		file_mgr(username)
-	#	else:
-	#		print("Incorrect password")
-	#		messagebox.showError("Failed login","Incorrect credentials")
-	#else:
-	#	print("User not found")
-
 def newFile(parent):
 	name = get_valid_filename(simpledialog.askstring("Input", "Please enter the file name:",
                                 parent=parent))
@@ -98,9 +80,8 @@ def newFile(parent):
 
 def renameSelectedFile(parent):
 	fileName = fileListBox.get(fileListBox.curselection())
-	newName = simpledialog.askstring("Input", "Please enter the new file name:",
-                                parent=parent)
-	if(newName is None or (not isValidFileName(newName))):
+	newName = get_valid_filename(simpledialog.askstring("Input", "Please enter the new file 		name:", parent=parent))
+	if(newName is None):
 		return
 	os.rename(fileName, newName)
 	addFiles(newName) 	
@@ -120,24 +101,25 @@ def saveSelectedFile():
 
 def deleteSelectedFile():
 	fileName = fileListBox.get(fileListBox.curselection())
-	confirmed = messagebox.askokcancel("Question","Really delete " + fileName + " ?")
-	if(confirmed):
+	confirmDelete = messagebox.askokcancel("Question","Really delete " + fileName + "?")
+	if(confirmDelete):
 		os.remove(fileName)
 		print(fileName, "deleted")
 		addFiles(0)
 
-def menu_bar(root):
+def menu_bar(root, isAdmin):
 	menuBar = Menu(root)
 	fileMenu = Menu(menuBar, tearoff=0)
-
-	fileMenu.add_command(label="New", command=lambda: newFile(root))	
-	fileMenu.add_command(label="Rename", command=lambda: renameSelectedFile(root))
-	fileMenu.add_command(label="Save", command=saveSelectedFile)
-	fileMenu.add_command(label="Delete", command=deleteSelectedFile)
-	fileMenu.add_separator()
+	
+	if(isAdmin):
+		fileMenu.add_command(label="New", command=lambda: newFile(root))
+		fileMenu.add_command(label="Rename", command=lambda: renameSelectedFile(root))	
+		fileMenu.add_command(label="Save", command=saveSelectedFile)
+		fileMenu.add_command(label="Delete", command=deleteSelectedFile)
+		fileMenu.add_separator()
 	fileMenu.add_command(label="Logout", command=login)	
 	fileMenu.add_command(label="Exit", command=root.quit)
-	menuBar.add_cascade(label="File", menu=fileMenu)
+	menuBar.add_cascade(label="Menu", menu=fileMenu)
 	root.config(menu=menuBar)
 
 def addFiles(fileToSelect = None):
@@ -146,7 +128,9 @@ def addFiles(fileToSelect = None):
 	selectionInd = 0
 	added = 0
 	for ind, item in enumerate(flist):
-		if(item == "explorer.py" or os.path.isdir(item)):
+		if(item in ["explorer.py", "db.py", "users.db"] #this software!
+			or
+		os.path.isdir(item)): #is a folder
 			continue
 		if(not (fileToSelect is None)):
 			if(fileToSelect == item):
@@ -156,7 +140,7 @@ def addFiles(fileToSelect = None):
 	fileListBox.selection_set(selectionInd)
 	print("Selecting", selectionInd)
 
-def onselect(evt):
+def onSelect(evt):
 	w = evt.widget
 	index = int(w.curselection()[0])
 	fileName = w.get(index)
@@ -185,7 +169,7 @@ def file_mgr(username):
 	m.pack(fill=BOTH, expand=1)
 	
 	fileListBox = Listbox(m, name='fileListBox')
-	fileListBox.bind('<<ListboxSelect>>', onselect)	
+	fileListBox.bind('<<ListboxSelect>>', onSelect)	
 	addFiles()
 
 	m.add(fileListBox)
@@ -199,7 +183,7 @@ def file_mgr(username):
 
 	m.add(textArea)
 
-	menu_bar(file_mgr)
+	menu_bar(file_mgr, isAdmin(username))
 	
 def login():
 	clear_root()
@@ -225,34 +209,7 @@ def login():
 	
 	Button(login_screen, text="Login", width=10, height=1, command=lambda: login_verification(username_verify.get(),password_verify.get())).pack()
 
-
-#c = conn.cursor()
-#try:
-#	c.execute("""CREATE TABLE users (
-#			username TEXT,
-#			pwd_hash TEXT,
-#			isAdmin INTEGER
-#		)""")
-#except:
-#	print("Database already exists")
-
-#c.execute("INSERT INTO users ('a', 'b', 'c')")
-#c.execute("SELECT * FROM users")
-#print(c.fetchall())
-
-#conn.commit()
-#conn.close()
-
-
-
-#users = {"a":"niceP@ssword", "b":"hello123"}
-
-#for username,password in users.items():
-#	users[username] = make_pw_hash(password)
-
-#login()
-login()
-
-root.mainloop()
-
-conn.close()
+if(__name__ == "__main__"):
+	login()
+	root.mainloop()
+	conn.close()
