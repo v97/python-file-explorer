@@ -1,6 +1,10 @@
 conn = sqlite3.connect('users.db')
 c = conn.cursor()
 
+#uses built-in hashlib library to generate hash for password for storage in database
+def make_pw_hash(password):
+	return str(hashlib.sha256(str.encode(password)).hexdigest())
+
 # Create table
 try:
 	c.execute('''CREATE TABLE users
