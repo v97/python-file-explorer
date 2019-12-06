@@ -27,10 +27,6 @@ def all_children (window) :
 			_list.extend(item.winfo_children())
 	return _list
 
-#uses built-in hashlib library to generate hash for password for storage in database
-def make_pw_hash(password):
-	return str(hashlib.sha256(str.encode(password)).hexdigest())
-
 #authenticates user according to information from database
 def check_pw_hash(password, user): #user object === (username, password, isAdmin)
 	if(make_pw_hash(password) == user[1]):
