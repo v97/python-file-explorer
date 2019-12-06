@@ -19,6 +19,7 @@ c = conn.cursor()
 
 adminList = ["a"]
 	
+#for clearing the window
 def all_children (window) :
 	_list = window.winfo_children()
 	for item in _list:
@@ -26,9 +27,11 @@ def all_children (window) :
 			_list.extend(item.winfo_children())
 	return _list
 
+#uses built-in hashlib library to generate hash for password for storage in database
 def make_pw_hash(password):
 	return str(hashlib.sha256(str.encode(password)).hexdigest())
 
+#authenticates user according to information from database
 def check_pw_hash(password, user): #user object === (username, password, isAdmin)
 	if(make_pw_hash(password) == user[1]):
 		return True
@@ -80,13 +83,11 @@ def newFile(parent):
 
 def renameSelectedFile(parent):
 	fileName = fileListBox.get(fileListBox.curselection())
-	newName = get_valid_filename(simpledialog.askstring("Input", "Please enter the new file 		name:", parent=parent))
+	newName = get_valid_filename(simpledialog.askstring("Input", "Please enter the new file name:", parent=parent))
 	if(newName is None):
 		return
 	os.rename(fileName, newName)
-	addFiles(newName) 	
-	print("Renamed", fileName, "to", newName)
-	
+	addFiles(newName)
 
 def saveSelectedFile():
 	print("Save file")
@@ -107,6 +108,7 @@ def deleteSelectedFile():
 		print(fileName, "deleted")
 		addFiles(0)
 
+#load the menu bar
 def menu_bar(root, isAdmin):
 	menuBar = Menu(root)
 	fileMenu = Menu(menuBar, tearoff=0)
@@ -122,6 +124,7 @@ def menu_bar(root, isAdmin):
 	menuBar.add_cascade(label="Menu", menu=fileMenu)
 	root.config(menu=menuBar)
 
+#populates file listbox with files in directory
 def addFiles(fileToSelect = None):
 	fileListBox.delete(0,END)
 	flist = os.listdir()
@@ -131,7 +134,7 @@ def addFiles(fileToSelect = None):
 		if(item in ["explorer.py", "db.py", "users.db"] #this software!
 			or
 		os.path.isdir(item)): #is a folder
-			continue
+			continue #skip items
 		if(not (fileToSelect is None)):
 			if(fileToSelect == item):
 				selectionInd = added
@@ -140,6 +143,7 @@ def addFiles(fileToSelect = None):
 	fileListBox.selection_set(selectionInd)
 	print("Selecting", selectionInd)
 
+#when user selects a file, show it in the text-editor
 def onSelect(evt):
 	w = evt.widget
 	index = int(w.curselection()[0])
@@ -152,11 +156,12 @@ def onSelect(evt):
 		textArea.delete('1.0', END)
 		textArea.insert(END, lines)
 		
+#main file explorer window
 def file_mgr(username):
 	clear_root()
 	
-	global fileListBox
-	global textArea
+	global fileListBox #lists files
+	global textArea #text editor for edits
 	
 	file_mgr = root
 	file_mgr.title("Files for " + username)
@@ -170,7 +175,7 @@ def file_mgr(username):
 	
 	fileListBox = Listbox(m, name='fileListBox')
 	fileListBox.bind('<<ListboxSelect>>', onSelect)	
-	addFiles()
+	addFiles() #populate
 
 	m.add(fileListBox)
 
@@ -184,7 +189,8 @@ def file_mgr(username):
 	m.add(textArea)
 
 	menu_bar(file_mgr, isAdmin(username))
-	
+
+#login window
 def login():
 	clear_root()
 	clear_credentials()	
@@ -203,7 +209,7 @@ def login():
 	username_login_entry.pack()
 	Label(login_screen, text="").pack()
 	Label(login_screen, text="Password * ").pack()
-	password__login_entry = Entry(login_screen, textvariable=password_verify, show= '*')
+	password__login_entry = Entry(login_screen, textvariable=password_verify, show= '*') #password field hides characters
 	password__login_entry.pack()
 	Label(login_screen, text="").pack()
 	
