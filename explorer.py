@@ -24,6 +24,9 @@ def clear_root():
 	for widget in widgets:
 		widget.pack_forget()
 
+def isAdmin(username):
+	return username in ["a"]
+
 def isValidFileName(fileName):
 	return True
 
@@ -146,35 +149,33 @@ def file_mgr(username):
 	scroll = Scrollbar(textArea, command=textArea.yview)
 	scroll.pack(side=RIGHT, fill=Y)
 	textArea.configure(yscrollcommand=scroll.set)
+	if(not isAdmin(username)):	
+		textArea.bind("<Key>", lambda e: "break")
 
 	m.add(textArea)
 
 	menu_bar(file_mgr)
 	
 def login():
-    global username_verify
-    global password_verify
+	login_screen = root
+	login_screen.title("Login")
+	login_screen.geometry("300x250")
+	Label(login_screen, text="Please enter credentials below to login").pack()
+	Label(login_screen, text="").pack()
+ 
+	username_verify = StringVar()
+	password_verify = StringVar()
 
-    login_screen = root
-    login_screen.title("Login")
-    login_screen.geometry("300x250")
-    Label(login_screen, text="Please enter credentials below to login").pack()
-    Label(login_screen, text="").pack()
- 
-    username_verify = StringVar()
-    password_verify = StringVar()
- 
-   
-    Label(login_screen, text="Username * ").pack()
-    username_login_entry = Entry(login_screen, textvariable=username_verify)
-    username_login_entry.pack()
-    Label(login_screen, text="").pack()
-    Label(login_screen, text="Password * ").pack()
-    password__login_entry = Entry(login_screen, textvariable=password_verify, show= '*')
-    password__login_entry.pack()
-    Label(login_screen, text="").pack()
-    Button(login_screen, text="Login", width=10, height=1,
-    command=lambda: login_verification(username_verify.get(),password_verify.get(),login_screen)).pack()
+	Label(login_screen, text="Username * ").pack()
+	username_login_entry = Entry(login_screen, textvariable=username_verify)
+	username_login_entry.pack()
+	Label(login_screen, text="").pack()
+	Label(login_screen, text="Password * ").pack()
+	password__login_entry = Entry(login_screen, textvariable=password_verify, show= '*')
+	password__login_entry.pack()
+	Label(login_screen, text="").pack()
+	
+	Button(login_screen, text="Login", width=10, height=1, command=lambda: login_verification(username_verify.get(),password_verify.get(),login_screen)).pack()
 
 login()
 
