@@ -18,4 +18,4 @@ Admin users have additional options available to them in the menu . They may:
   3) Rename a file
   4) Delete a file
   
-So far, tested in Ubuntu 18.04 with Python 3.7
+So far, tested in Ubuntu 18.04 and Windows 10 with Python 3.7
