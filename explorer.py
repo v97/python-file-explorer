@@ -167,8 +167,11 @@ def paste():
 	print("Pasting", clipBoard, "to", destination)
 	if(transferMode == "cut"):
 		shutil.move(clipBoard, destination)
+		notif = "Moving"
 	elif(transferMode == "copy"):
 		shutil.copyfile(clipBoard, destination)
+		notif = "Copying"
+	messagebox.showinfo("Paste", notif + " " + clipBoard + " to " + destination)
 	reloadFiles()
 
 #load the menu bar
@@ -181,11 +184,18 @@ def menu_bar(root, isAdmin):
 		fileMenu.add_command(label="New file", command=lambda: newFile(root))
 		fileMenu.add_command(label="New folder", command=lambda: newFolder(root))
 		fileMenu.add_command(label="Rename", command=lambda: renameSelectedFile(root))	
-		fileMenu.add_command(label="Copy", command=copy)
+		
+	fileMenu.add_command(label="Copy", command=copy)
+		
+	if(isAdmin):
 		fileMenu.add_command(label="Cut", command=cut)
-		fileMenu.add_command(label="Paste", command=paste)
+	
+	fileMenu.add_command(label="Paste", command=paste)
+		
+	if(isAdmin):	
 		fileMenu.add_command(label="Save", command=saveSelectedFile)
 		fileMenu.add_command(label="Delete", command=deleteSelectedFile)
+	
 	fileMenu.add_separator()
 	fileMenu.add_command(label="Logout", command=login)
 	fileMenu.add_command(label="Exit", command=root.quit)
