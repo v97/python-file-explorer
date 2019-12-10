@@ -14,6 +14,9 @@ root = Tk()
 fileListBox = None
 textArea = None
 
+curPathText = StringVar()
+curPathText.set(os.getcwd())
+
 conn = sqlite3.connect('users.db')
 c = conn.cursor()
 
@@ -79,7 +82,13 @@ def newFile(parent):
 	f = open(name,"w+")
 	f.write("")
 	f.close()
-	addFiles(name)
+	reloadFiles(name)
+
+def newFolder(parent):
+	name = get_valid_filename(simpledialog.askstring("Input", "Please enter the file name:",
+                                parent=parent))
+	if not os.path.exists(name):
+		os.makedirs(name)
 
 def renameSelectedFile(parent):
 	fileName = fileListBox.get(fileListBox.curselection())
@@ -87,7 +96,7 @@ def renameSelectedFile(parent):
 	if(newName is None):
 		return
 	os.rename(fileName, newName)
-	addFiles(newName)
+	reloadFiles(newName)
 
 def saveSelectedFile():
 	print("Save file")
@@ -106,7 +115,24 @@ def deleteSelectedFile():
 	if(confirmDelete):
 		os.remove(fileName)
 		print(fileName, "deleted")
-		addFiles(0)
+		reloadFiles(0)
+
+def enterFolder():
+	global curPathText
+	try:
+		folderName = fileListBox.get(fileListBox.curselection())
+		newPath = curPathText.get() + "\\" + folderName
+		if(os.path.isdir(newPath)):
+			curPathText.set(newPath)
+			reloadFiles()
+		else:
+			messagebox.showinfo("Huh.", folderName + " is not a folder")
+	except:
+		messagebox.showinfo("Unable to enter folder")
+
+def upward():
+	curPathText.set(('\\').join(curPathText.get().split("\\")[:-1]))
+	reloadFiles()
 
 #load the menu bar
 def menu_bar(root, isAdmin):
@@ -114,26 +140,30 @@ def menu_bar(root, isAdmin):
 	fileMenu = Menu(menuBar, tearoff=0)
 	
 	if(isAdmin):
-		fileMenu.add_command(label="New", command=lambda: newFile(root))
+		fileMenu.add_command(label="New file", command=lambda: newFile(root))
+		fileMenu.add_command(label="New folder", command=lambda: newFolder(root))
 		fileMenu.add_command(label="Rename", command=lambda: renameSelectedFile(root))	
 		fileMenu.add_command(label="Save", command=saveSelectedFile)
 		fileMenu.add_command(label="Delete", command=deleteSelectedFile)
-		fileMenu.add_separator()
-	fileMenu.add_command(label="Logout", command=login)	
+	fileMenu.add_command(label="Reload", command=reloadFiles)
+	fileMenu.add_command(label="Enter", command=enterFolder)
+	fileMenu.add_command(label="Up", command=upward)
+	fileMenu.add_separator()
+	fileMenu.add_command(label="Logout", command=login)
 	fileMenu.add_command(label="Exit", command=root.quit)
 	menuBar.add_cascade(label="Menu", menu=fileMenu)
 	root.config(menu=menuBar)
 
 #populates file listbox with files in directory
-def addFiles(fileToSelect = None):
+def reloadFiles(fileToSelect = None):
 	fileListBox.delete(0,END)
-	flist = os.listdir()
+	flist = os.listdir(curPathText.get())
 	selectionInd = 0
 	added = 0
 	for ind, item in enumerate(flist):
-		if(item in ["explorer.py", "db.py", "users.db"] #this software!
-			or
-		os.path.isdir(item)): #is a folder
+		if(item in ["explorer.py", "db.py", "users.db"]): #this software!
+			#or
+			#os.path.isdir(item)): #is a folder
 			continue #skip items
 		if(not (fileToSelect is None)):
 			if(fileToSelect == item):
@@ -149,12 +179,14 @@ def onSelect(evt):
 	index = int(w.curselection()[0])
 	fileName = w.get(index)
 	print('You selected item %d: "%s"' % (index, fileName))
-	
+	if(os.path.exists(fileName) and os.path.isdir(fileName)):
+		content = str('\n'.join(os.listdir(fileName)))
 	#update text area
-	with open(fileName) as f:
-		lines = f.readlines()
-		textArea.delete('1.0', END)
-		textArea.insert(END, lines)
+	else:
+		with open(fileName) as f:
+			content = f.readlines()
+	textArea.delete('1.0', END)
+	textArea.insert(END, content)
 		
 #main file explorer window
 def file_mgr(username):
@@ -168,14 +200,15 @@ def file_mgr(username):
 	file_mgr.geometry("800x500")
 	
 	Label(file_mgr, text="Welcome to file manager, " + username).pack()
-	Label(file_mgr, text="").pack()
+	curPathLabel = Label(file_mgr, textvariable=curPathText)
+	curPathLabel.pack()
 
 	m = PanedWindow(file_mgr,orient="horizontal")
 	m.pack(fill=BOTH, expand=1)
 	
 	fileListBox = Listbox(m, name='fileListBox')
 	fileListBox.bind('<<ListboxSelect>>', onSelect)	
-	addFiles() #populate
+	reloadFiles() #populate
 
 	m.add(fileListBox)
 
