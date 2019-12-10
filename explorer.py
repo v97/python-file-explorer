@@ -11,6 +11,8 @@ import sqlite3
     
 root = Tk()
 
+clipBoard = None
+
 fileListBox = None
 textArea = None
 
@@ -91,10 +93,11 @@ def newFolder(parent):
 		os.makedirs(name)
 
 def renameSelectedFile(parent):
-	fileName = fileListBox.get(fileListBox.curselection())
-	newName = get_valid_filename(simpledialog.askstring("Input", "Please enter the new file name:", parent=parent))
-	if(newName is None):
+	fileName = curPathText.get() + "\\" + fileListBox.get(fileListBox.curselection())
+	in_ = get_valid_filename(simpledialog.askstring("Input", "Please enter the new file name:", parent=parent))
+	if(in_ is None):
 		return
+	newName = curPathText.get() + "\\" + in_
 	os.rename(fileName, newName)
 	reloadFiles(newName)
 
@@ -102,18 +105,19 @@ def saveSelectedFile():
 	print("Save file")
 	try:
 		fileName = fileListBox.get(fileListBox.curselection())
-		f = open(fileName,"w+")
+		fullFileName = curPathText.get() + "\\" + fileName
+		f = open(fullFileName,"w+")
 		f.write(textArea.get("1.0",END))
 		f.close()
 		messagebox.showinfo("Information","Saved " + fileName + " successfully!")
 	except:
-		messagebox.showinfo("Make a new file before saving")
+		messagebox.showinfo("Information", "Make a new file before saving, or select existing file")
 
 def deleteSelectedFile():
 	fileName = fileListBox.get(fileListBox.curselection())
 	confirmDelete = messagebox.askokcancel("Question","Really delete " + fileName + "?")
 	if(confirmDelete):
-		os.remove(fileName)
+		os.remove(curPathText.get() + "\\" + fileName)
 		print(fileName, "deleted")
 		reloadFiles(0)
 
@@ -126,32 +130,72 @@ def enterFolder():
 			curPathText.set(newPath)
 			reloadFiles()
 		else:
-			messagebox.showinfo("Huh.", folderName + " is not a folder")
+			messagebox.showinfo("Error", folderName + " is not a folder")
 	except:
-		messagebox.showinfo("Unable to enter folder")
+		messagebox.showinfo("Error", "Unable to enter folder")
 
 def upward():
 	curPathText.set(('\\').join(curPathText.get().split("\\")[:-1]))
+	reloadFiles()
+
+def copy():
+	global clipBoard
+	global transferMode
+	clipBoard = curPathText.get() + "\\" + fileListBox.get(fileListBox.curselection())
+	transferMode = "copy"
+	print("Copied", clipBoard)
+
+def cut():
+	global clipBoard
+	global transferMode
+	clipBoard = curPathText.get() + "\\" + fileListBox.get(fileListBox.curselection())
+	transferMode = "cut"
+	print("Cut", clipBoard)
+
+def paste():
+	global clipBoard
+	global transferMode
+	fileName = clipBoard.split("\\")[-1]
+	print("y", fileName)
+	try:
+		if(transferMode == "copy"):
+			[fileName, fileType] = fileName.split(".")
+			fileName = fileName + "_copy." + fileType
+	except:
+		pass
+	destination = curPathText.get() + "\\" + fileName
+	print("Pasting", clipBoard, "to", destination)
+	if(transferMode == "cut"):
+		shutil.move(clipBoard, destination)
+	elif(transferMode == "copy"):
+		shutil.copyfile(clipBoard, destination)
 	reloadFiles()
 
 #load the menu bar
 def menu_bar(root, isAdmin):
 	menuBar = Menu(root)
 	fileMenu = Menu(menuBar, tearoff=0)
-	
+	navMenu = Menu(menuBar, tearoff=0)
+
 	if(isAdmin):
 		fileMenu.add_command(label="New file", command=lambda: newFile(root))
 		fileMenu.add_command(label="New folder", command=lambda: newFolder(root))
 		fileMenu.add_command(label="Rename", command=lambda: renameSelectedFile(root))	
+		fileMenu.add_command(label="Copy", command=copy)
+		fileMenu.add_command(label="Cut", command=cut)
+		fileMenu.add_command(label="Paste", command=paste)
 		fileMenu.add_command(label="Save", command=saveSelectedFile)
 		fileMenu.add_command(label="Delete", command=deleteSelectedFile)
-	fileMenu.add_command(label="Reload", command=reloadFiles)
-	fileMenu.add_command(label="Enter", command=enterFolder)
-	fileMenu.add_command(label="Up", command=upward)
 	fileMenu.add_separator()
 	fileMenu.add_command(label="Logout", command=login)
 	fileMenu.add_command(label="Exit", command=root.quit)
+
+	navMenu.add_command(label="Reload", command=reloadFiles)
+	navMenu.add_command(label="Enter", command=enterFolder)
+	navMenu.add_command(label="Up", command=upward)
+
 	menuBar.add_cascade(label="Menu", menu=fileMenu)
+	menuBar.add_cascade(label="Nav", menu=navMenu)
 	root.config(menu=menuBar)
 
 #populates file listbox with files in directory
@@ -178,12 +222,13 @@ def onSelect(evt):
 	w = evt.widget
 	index = int(w.curselection()[0])
 	fileName = w.get(index)
-	print('You selected item %d: "%s"' % (index, fileName))
-	if(os.path.exists(fileName) and os.path.isdir(fileName)):
-		content = str('\n'.join(os.listdir(fileName)))
+	fullFileName = curPathText.get() + "\\" + fileName
+	print('You selected item %d: "%s"' % (index, fullFileName))
+	if(os.path.exists(fullFileName) and os.path.isdir(fullFileName)):
+		content = "Contents of " + fileName + ":\n\n" + str('\n'.join(os.listdir(fullFileName)))
 	#update text area
 	else:
-		with open(fileName) as f:
+		with open(fullFileName) as f:
 			content = f.readlines()
 	textArea.delete('1.0', END)
 	textArea.insert(END, content)
